@@ -1,0 +1,7 @@
+<?php
+
+declare(strict_types=1);
+require_once __DIR__ . '/proteger_cliente.php'; require_once __DIR__ . '/conexion.php';$uid=(int)usuario_actual()['id'];$stmt=$conexion->prepare('SELECT * FROM pedidos WHERE usuario_id=? ORDER BY id DESC');$stmt->bind_param('i',$uid);$stmt->execute();$res=$stmt->get_result();
+?>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mis pedidos</title><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><a class="brand" href="index.php"><span class="brand-mark">✚</span><span><?= e(APP_NAME) ?></span></a><nav><a href="index.php">Tienda</a><a class="nav-active" href="mis_pedidos.php">Mis pedidos</a><a href="perfil.php">Mi perfil</a></nav></header><main class="admin-main"><div class="section-heading"><div><p class="eyebrow">Cuenta</p><h1>Mis pedidos</h1></div></div><div class="orders-grid"><?php if(!$res->num_rows):?><p class="empty-state">Todavía no tienes pedidos.</p><?php endif;?><?php while($p=$res->fetch_assoc()):?><a class="order-card" href="pedido.php?id=<?= (int)$p['id'] ?>"><div><strong><?= e($p['folio']) ?></strong><small><?= e(date('d/m/Y H:i',strtotime($p['creado_en']))) ?></small></div><span class="status status-<?= e($p['estado']) ?>"><?= e(str_replace('_',' ',$p['estado'])) ?></span><strong>$<?= number_format((float)$p['total'],2) ?></strong></a><?php endwhile;?></div></main><script src="ui.js" defer></script>
+</body></html>
