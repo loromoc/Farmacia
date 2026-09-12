@@ -1,102 +1,624 @@
-# Farmacia Doña Lupe — V7 integrada
+# Farmacia Doña Lupe — Sistema web de farmacia V7
 
-Esta versión combina la aplicación PHP/MySQL existente con la interfaz visual FarmaPlus aportada como referencia. La portada dejó de ser un prototipo con productos hardcodeados: ahora categorías, productos, existencias, imágenes, promociones y precios salen de `farmacia_db`.
+## Descripción del proyecto
 
-## Qué se integró
+**Farmacia Doña Lupe** es una aplicación web de farmacia desarrollada con **PHP, MySQL/MariaDB, HTML, CSS y JavaScript**. El proyecto comenzó como un catálogo sencillo con registro de usuarios, inicio de sesión y administración básica de productos, y posteriormente fue evolucionando hasta convertirse en una tienda en línea con carrito, checkout, pedidos, pagos, promociones, perfil del cliente, direcciones de envío, notificaciones y una interfaz visual más completa.
 
-- Portada premium azul clínico + verde farmacéutico.
-- Barra informativa, navbar sticky, buscador instantáneo, categorías dinámicas.
-- Vista catálogo en cuadrícula/lista.
-- Favoritos en `localStorage`.
-- Carrito lateral animado conectado al checkout PHP real.
-- Imágenes reales del inventario en lugar de emojis de productos.
-- Promociones administrables por porcentaje o monto fijo.
-- Promoción destacada con cuenta regresiva real según `fecha_fin`.
-- Precio promocional revalidado en PHP.
-- Perfil con dirección principal precargada en checkout.
-- Mercado Pago y pasarela demo existentes.
-- Seguimiento visual del pedido.
-- Newsletter que guarda correos en MySQL.
-- Preferencias de notificación por correo y WhatsApp.
-- Botón manual de WhatsApp desde Pedidos, respetando el opt-in del cliente.
-- Correo SMTP opcional con PHPMailer cuando el admin cambia el estado del pedido.
+La versión actual también integra lo mejor de una segunda propuesta visual llamada **FarmaPlus**, conservando el backend y la lógica real de Farmacia Doña Lupe. El resultado es una aplicación que combina una interfaz moderna con la funcionalidad real de una tienda PHP/MySQL.
 
-## Instalación si ya tienes la versión anterior funcionando
+---
 
-1. Haz un respaldo de `farmacia_db`.
-2. Reemplaza la carpeta `C:\xampp\htdocs\Trabajo_v2` por esta.
-3. En phpMyAdmin selecciona `farmacia_db`.
-4. Importa **una sola vez** `migracion_integracion_v7.sql`.
-5. Reinicia Apache.
-6. Abre `http://localhost/Trabajo_v2/`.
+# ¿Qué se hizo en el proyecto?
 
-La migración no borra usuarios, productos, pedidos ni pagos. Añade promociones, suscriptores, notificaciones y campos necesarios para guardar el descuento aplicado en el historial del pedido.
+## 1. Se mejoró la estructura inicial de la farmacia
 
-## Instalación limpia
+El proyecto original ya contaba con:
 
-Importa `database.sql` y luego crea un administrador desde consola:
+- registro de usuarios;
+- inicio y cierre de sesión;
+- roles de **administrador** y **cliente**;
+- catálogo de productos;
+- panel administrativo;
+- carga de imágenes;
+- conexión con MySQL.
+
+A partir de esa base se reorganizó y amplió el sistema para convertirlo en una aplicación de comercio electrónico más completa.
+
+## 2. Se corrigieron problemas de la versión original
+
+Se corrigieron varios puntos que podían causar errores o problemas de seguridad:
+
+- se agregó el JavaScript que faltaba para el carrito;
+- se corrigió la eliminación de imágenes/productos;
+- se mejoró la validación de archivos subidos;
+- se eliminaron credenciales administrativas fijas del código;
+- se añadieron consultas preparadas y validaciones del lado del servidor;
+- se incorporó protección CSRF en acciones importantes;
+- se mejoró el manejo de sesiones;
+- se agregó escape de contenido HTML para reducir riesgos de XSS;
+- se cambió la eliminación de registros sensibles a solicitudes `POST`;
+- se mejoró el manejo de errores para que el usuario reciba mensajes claros.
+
+## 3. Se creó un carrito de compras real
+
+El catálogo ahora permite:
+
+- agregar productos al carrito;
+- aumentar o disminuir cantidades;
+- eliminar productos;
+- ver subtotal;
+- conservar el carrito en el navegador;
+- validar nuevamente precio y stock desde PHP antes de crear un pedido.
+
+El servidor **no confía en precios enviados desde JavaScript**. Antes de registrar la compra, PHP vuelve a consultar los productos en la base de datos y calcula el total correcto.
+
+## 4. Se implementó un checkout completo
+
+Se creó un flujo de compra:
+
+```text
+Catálogo
+   ↓
+Carrito
+   ↓
+Dirección de envío
+   ↓
+Cotización de envío
+   ↓
+Pedido
+   ↓
+Método de pago
+   ↓
+Confirmación
+```
+
+El checkout valida:
+
+- productos existentes;
+- cantidades;
+- stock disponible;
+- precio vigente;
+- promociones;
+- posibilidad de envío;
+- datos de dirección.
+
+## 5. Se agregó soporte para envíos nacionales
+
+El sistema incluye una estructura preparada para envíos nacionales.
+
+Actualmente dispone de una tarifa interna configurable con opciones como:
+
+- envío estándar;
+- envío express;
+- cálculo utilizando el peso del pedido.
+
+Los productos pueden guardar datos logísticos como:
+
+- peso;
+- alto;
+- ancho;
+- largo;
+- si permiten envío nacional.
+
+La función actual puede sustituirse en el futuro por una API de paquetería sin necesidad de rehacer el carrito o el checkout.
+
+## 6. Se creó el sistema de pedidos
+
+Se añadieron tablas y pantallas para manejar pedidos reales.
+
+Cada pedido puede guardar:
+
+- folio;
+- cliente;
+- productos;
+- cantidades;
+- subtotal;
+- costo de envío;
+- total;
+- dirección utilizada;
+- estado del pedido;
+- estado del pago;
+- proveedor de pago;
+- guía de envío.
+
+Los estados utilizados permiten representar el flujo de atención:
+
+```text
+Pendiente de pago
+      ↓
+Pagado
+      ↓
+Preparando
+      ↓
+Enviado
+      ↓
+Entregado
+```
+
+También existe la posibilidad de cancelar pedidos cuando corresponda.
+
+## 7. Se creó el área “Mis pedidos” para clientes
+
+El cliente puede consultar sus compras y revisar:
+
+- folio;
+- fecha;
+- total;
+- estado;
+- productos;
+- dirección de entrega;
+- número de guía cuando exista.
+
+Se incorporó además un seguimiento visual para que el cliente pueda reconocer con mayor facilidad en qué etapa se encuentra su pedido.
+
+## 8. Se integró Mercado Pago
+
+Se preparó la integración con **Mercado Pago Checkout Pro**.
+
+El backend puede:
+
+- crear una preferencia de pago;
+- enviar a Mercado Pago el pedido real;
+- utilizar el total calculado por el servidor;
+- regresar al sitio después del pago;
+- consultar el estado del pago;
+- recibir notificaciones mediante Webhook;
+- actualizar el pedido cuando el pago es aprobado.
+
+La configuración se realiza mediante variables del servidor, por ejemplo:
+
+```apache
+SetEnv MERCADOPAGO_ACCESS_TOKEN "TU_ACCESS_TOKEN"
+SetEnv MERCADOPAGO_USE_SANDBOX "1"
+SetEnv APP_URL "https://TU-DOMINIO-O-TUNEL/Trabajo_v2"
+```
+
+El Access Token no se guarda directamente en JavaScript.
+
+## 9. Se agregó una pasarela interna de demostración
+
+Además de Mercado Pago se creó una **pasarela interna de prueba**.
+
+Esta opción sirve para demostrar el flujo completo del proyecto sin realizar un cobro real. Permite simular un pago aprobado y comprobar cómo se actualizan pedido y pago.
+
+> La pasarela interna es únicamente demostrativa. No procesa tarjetas reales ni almacena CVV o números de tarjeta.
+
+## 10. Se añadió una pantalla clara de pago aprobado
+
+Después de un pago exitoso, el usuario puede visualizar una confirmación con información como:
+
+- pedido;
+- total;
+- estado del pago;
+- proveedor;
+- referencia de pago.
+
+El sistema también puede consultar periódicamente el estado cuando la confirmación todavía se encuentra pendiente.
+
+## 11. Se mejoró el perfil del cliente
+
+Se creó una sección **Mi perfil** donde cada cliente puede administrar:
+
+- nombre;
+- correo;
+- teléfono;
+- contraseña;
+- preferencias de notificación.
+
+## 12. Se añadió dirección de envío al perfil
+
+El cliente puede guardar una dirección principal con:
+
+- calle;
+- número exterior;
+- número interior;
+- colonia;
+- código postal;
+- municipio o alcaldía;
+- estado;
+- referencias.
+
+El checkout carga automáticamente esa información para evitar que el cliente tenga que escribirla en cada compra.
+
+La dirección utilizada se copia también al pedido. De esta manera, si el cliente cambia posteriormente su dirección en el perfil, los pedidos anteriores conservan los datos originales con los que fueron realizados.
+
+## 13. Se implementaron promociones y descuentos desde Administración
+
+El administrador puede crear descuentos desde el panel.
+
+Las promociones pueden configurarse por:
+
+- producto individual;
+- todo el catálogo;
+- porcentaje;
+- cantidad fija en pesos;
+- fecha y hora de inicio;
+- fecha y hora de finalización;
+- promoción únicamente por el día;
+- promoción destacada en la tienda;
+- estado activa/inactiva.
+
+Si coinciden varias promociones, PHP utiliza la opción que deje el menor precio final.
+
+Los pedidos guardan un historial del descuento aplicado:
+
+- precio original;
+- precio final;
+- descuento por unidad;
+- nombre de la promoción.
+
+Por lo tanto, eliminar o finalizar una promoción posteriormente no modifica los pedidos ya realizados.
+
+## 14. Se añadieron notificaciones para el seguimiento de pedidos
+
+Se preparó un sistema de notificaciones para avisar al cliente sobre cambios de estado.
+
+### Correo electrónico
+
+Puede utilizarse **PHPMailer + SMTP** para enviar correos cuando un pedido cambie de estado.
+
+Estados que pueden generar avisos:
+
+- pagado;
+- preparando;
+- enviado;
+- entregado;
+- cancelado.
+
+### WhatsApp manual
+
+El administrador dispone de un botón que abre WhatsApp con un mensaje precargado para el cliente. Esto funciona sin configurar una API externa.
+
+### WhatsApp automático
+
+La arquitectura también quedó preparada para una integración posterior con WhatsApp Cloud API, siempre respetando el consentimiento del cliente.
+
+El cliente puede decidir desde su perfil si desea recibir:
+
+- avisos por correo;
+- avisos por WhatsApp.
+
+## 15. Se añadió historial de notificaciones
+
+La base de datos puede registrar el resultado de los avisos como:
+
+```text
+enviada
+error
+omitida
+```
+
+Un fallo al enviar una notificación no revierte el cambio de estado del pedido.
+
+## 16. Se integró el diseño FarmaPlus con Farmacia Doña Lupe
+
+Se tomó la propuesta visual FarmaPlus y se adaptó a la aplicación PHP/MySQL.
+
+Se conservaron e integraron elementos como:
+
+- azul clínico y verde farmacéutico;
+- barra informativa;
+- navbar sticky;
+- buscador;
+- hero principal;
+- tarjetas de categorías;
+- catálogo en cuadrícula;
+- vista de lista;
+- favoritos;
+- carrito lateral;
+- banner de promociones;
+- productos destacados;
+- newsletter;
+- footer completo;
+- notificaciones tipo toast;
+- botón para volver al inicio;
+- animaciones y transiciones.
+
+La diferencia principal es que ahora esos componentes **no trabajan con productos ficticios de JavaScript**. Los productos, precios, imágenes, stock y promociones provienen de `farmacia_db`.
+
+## 17. Se añadieron animaciones y mejoras visuales
+
+Se incorporaron efectos como:
+
+- gradientes animados;
+- efectos hover;
+- entrada de elementos;
+- carrito lateral animado;
+- mensajes toast;
+- animaciones al agregar productos;
+- transición del navbar al hacer scroll;
+- animación de pago aprobado;
+- cuenta regresiva de promociones;
+- diseño responsive para teléfonos y tablets.
+
+También se contempla `prefers-reduced-motion` para usuarios que prefieren reducir animaciones.
+
+## 18. Se creó una newsletter conectada a la base de datos
+
+El formulario de suscripción dejó de ser únicamente visual.
+
+Ahora permite guardar correos en una tabla de suscriptores para futuras campañas o avisos, evitando duplicados cuando corresponda.
+
+## 19. Se reforzó la seguridad
+
+Entre las medidas implementadas se encuentran:
+
+- `password_hash()` y `password_verify()`;
+- consultas preparadas con MySQLi;
+- tokens CSRF;
+- sesiones con opciones seguras;
+- regeneración del ID de sesión al autenticar;
+- validaciones del lado del servidor;
+- escape con `htmlspecialchars()`;
+- control de roles;
+- validación de imágenes JPG/PNG/WebP;
+- nombres aleatorios para archivos subidos;
+- bloqueo de ejecución de PHP dentro de `uploads`;
+- comprobación de stock y precios antes de registrar pedidos;
+- variables de entorno para credenciales sensibles.
+
+## 20. Se mejoró el manejo de medicamentos
+
+Los productos pueden incluir datos adicionales como:
+
+- principio activo;
+- presentación;
+- categoría;
+- peso y dimensiones;
+- requerimiento de receta;
+- disponibilidad para envío;
+- estado activo/inactivo.
+
+Los productos marcados como `requiere_receta=1` quedan restringidos mientras no exista un proceso formal de validación de receta.
+
+---
+
+# Tecnologías utilizadas
+
+| Tecnología | Uso |
+|---|---|
+| PHP 8 | Backend, sesiones, pedidos, pagos y administración |
+| MySQL / MariaDB | Base de datos |
+| HTML5 | Estructura de páginas |
+| CSS3 | Diseño, responsive y animaciones |
+| JavaScript | Carrito, filtros, buscador, interacciones y UI |
+| MySQLi | Comunicación segura con la base de datos |
+| Mercado Pago API | Pasarela de pago |
+| PHPMailer | Notificaciones por correo SMTP |
+| Cloudflare Tunnel | Pruebas públicas del sitio local y Webhooks |
+| XAMPP | Entorno local Apache + PHP + MariaDB |
+
+---
+
+# Módulos principales
+
+```text
+Farmacia Doña Lupe
+│
+├── Tienda / catálogo
+├── Categorías y búsqueda
+├── Carrito
+├── Registro e inicio de sesión
+├── Perfil y dirección
+├── Checkout
+├── Envíos
+├── Pedidos
+├── Mis pedidos
+├── Mercado Pago
+├── Pago interno de demostración
+├── Promociones
+├── Newsletter
+├── Notificaciones
+│   ├── Correo
+│   └── WhatsApp
+└── Administración
+    ├── Productos
+    ├── Inventario
+    ├── Promociones
+    └── Pedidos
+```
+
+---
+
+# Base de datos
+
+Las tablas principales utilizadas por el proyecto son:
+
+```text
+usuarios
+productos
+pedidos
+pedido_detalles
+pagos
+promociones
+notificaciones
+suscriptores
+```
+
+## `usuarios`
+
+Contiene información de autenticación, rol, perfil, dirección y preferencias de contacto.
+
+## `productos`
+
+Contiene catálogo, stock, precio, imagen, información farmacéutica y datos para envío.
+
+## `pedidos`
+
+Guarda la información general de cada compra y una copia de la dirección utilizada.
+
+## `pedido_detalles`
+
+Guarda cada producto comprado, cantidades y precios históricos, incluyendo descuentos.
+
+## `pagos`
+
+Permite guardar proveedor, referencia y estado de pago.
+
+## `promociones`
+
+Gestiona descuentos, vigencia, producto relacionado y estado.
+
+## `notificaciones`
+
+Permite registrar los intentos de correo/WhatsApp y su resultado.
+
+## `suscriptores`
+
+Almacena los correos registrados mediante la newsletter.
+
+---
+
+# Flujo general del cliente
+
+```text
+Crear cuenta / iniciar sesión
+          ↓
+Completar perfil y dirección
+          ↓
+Buscar productos
+          ↓
+Agregar al carrito
+          ↓
+Revisar carrito
+          ↓
+Checkout
+          ↓
+Elegir envío
+          ↓
+Crear pedido
+          ↓
+Elegir método de pago
+          ↓
+Pago aprobado
+          ↓
+Seguimiento del pedido
+          ↓
+Preparando → Enviado → Entregado
+```
+
+---
+
+# Funciones del administrador
+
+El administrador puede:
+
+- registrar productos;
+- editar productos;
+- eliminar productos;
+- controlar stock;
+- subir imágenes;
+- crear promociones;
+- pausar y activar promociones;
+- eliminar promociones;
+- consultar pedidos;
+- cambiar estados de pedido;
+- agregar guía de envío;
+- abrir WhatsApp con mensaje de seguimiento;
+- disparar notificaciones por correo cuando estén configuradas.
+
+---
+
+# Instalación si ya existe una versión anterior
+
+1. Haz respaldo de `farmacia_db` desde phpMyAdmin.
+2. Haz respaldo de tu carpeta actual `C:\xampp\htdocs\Trabajo_v2`.
+3. Reemplaza la carpeta por la nueva versión.
+4. Selecciona `farmacia_db` en phpMyAdmin.
+5. Importa **una sola vez**:
+
+```text
+migracion_integracion_v7.sql
+```
+
+6. Reinicia Apache y MySQL.
+7. Abre:
+
+```text
+http://localhost/Trabajo_v2/
+```
+
+La migración está diseñada para conservar usuarios, productos, pedidos y pagos existentes.
+
+## Reparación de promociones para bases provenientes de versiones anteriores
+
+Si el panel muestra un error similar a:
+
+```text
+Unknown column 'activa' in 'where clause'
+```
+
+importa una sola vez:
+
+```text
+reparar_promociones_v7.sql
+```
+
+Este parche agrega las columnas de estado requeridas por el módulo de promociones sin borrar datos existentes.
+
+---
+
+# Instalación limpia
+
+Si se va a crear una base desde cero:
+
+1. Inicia Apache y MySQL en XAMPP.
+2. Importa `database.sql` en phpMyAdmin.
+3. Coloca la carpeta en:
+
+```text
+C:\xampp\htdocs\Trabajo_v2
+```
+
+4. Crea un administrador desde consola:
 
 ```bash
 php crear_admin.php admin@tudominio.com "UnaClaveMuySegura" "Administrador"
 ```
 
-## Mercado Pago
+5. Abre:
 
-Se conservan las variables existentes:
+```text
+http://localhost/Trabajo_v2/
+```
+
+---
+
+# Configuración de Mercado Pago
+
+En Apache se pueden configurar variables como:
 
 ```apache
 SetEnv MERCADOPAGO_ACCESS_TOKEN "TU_ACCESS_TOKEN"
 SetEnv MERCADOPAGO_USE_SANDBOX "1"
-SetEnv APP_URL "https://TU-TUNEL.trycloudflare.com/Trabajo_v2"
+SetEnv APP_URL "https://TU-DOMINIO-O-TUNEL/Trabajo_v2"
 ```
 
-Para producción usa HTTPS y credenciales de producción.
+Después se debe reiniciar Apache.
 
-## Promociones
+Para probar Webhooks en desarrollo se puede utilizar Cloudflare Tunnel.
 
-Entra como administrador en `panel_admin.php`.
+Ejemplo:
 
-Puedes elegir:
+```powershell
+cloudflared tunnel --url http://localhost:80
+```
 
-- un producto concreto o todo el catálogo;
-- porcentaje o monto fijo;
-- inicio y fin;
-- “solo por hoy”;
-- promoción destacada.
+El túnel genera una URL pública temporal. Esa URL debe utilizarse también en `APP_URL` y en la configuración de Webhooks de Mercado Pago mientras se realicen pruebas.
 
-Si varias promociones coinciden, PHP aplica la que deje el precio final más bajo. El navegador no decide el precio final.
+---
 
-## Dirección del cliente
+# Configuración de correo SMTP
 
-El cliente puede guardar desde `perfil.php`:
+El proyecto puede utilizar PHPMailer.
 
-- teléfono;
-- calle y números;
-- colonia;
-- código postal;
-- municipio/alcaldía;
-- estado;
-- referencias.
-
-`checkout.php` precarga esa dirección. El pedido guarda una copia histórica, por lo que cambiar el perfil después no modifica pedidos anteriores.
-
-## Notificaciones fáciles
-
-### WhatsApp manual
-
-No requiere API. El cliente debe activar “Autorizo avisos de seguimiento por WhatsApp” en `perfil.php`.
-
-Después, en `panel_pedidos.php`, aparece el botón WhatsApp para abrir una conversación con mensaje precargado. Si el pedido está enviado e incluye guía, el texto incluye la guía.
-
-### Correo automático con SMTP
-
-Instala Composer y desde la carpeta del proyecto ejecuta:
+Instala dependencias:
 
 ```bash
 composer install
 ```
 
-Luego agrega en `C:\xampp\apache\conf\httpd.conf`:
+Ejemplo de configuración en Apache:
 
 ```apache
 SetEnv SMTP_ENABLED "1"
@@ -109,58 +631,112 @@ SetEnv SMTP_FROM_EMAIL "correo.farmacia@gmail.com"
 SetEnv SMTP_FROM_NAME "Farmacia Doña Lupe"
 ```
 
-Reinicia Apache. Puedes revisar el estado en `diagnostico_notificaciones.php`.
+Después reinicia Apache.
 
-No guardes la contraseña normal de Gmail. Si utilizas Gmail, usa una contraseña de aplicación de una cuenta configurada para ello.
+Puedes comprobar la configuración desde:
 
-## Envíos
+```text
+diagnostico_notificaciones.php
+```
 
-La versión actual conserva `tarifa_envio_manual()`:
+---
 
-- estándar;
-- express;
-- cálculo según peso.
+# Archivos importantes
 
-El precio y stock se validan nuevamente desde PHP. Más adelante esta función puede sustituirse por una API de paquetería sin rehacer carrito/checkout.
+| Archivo | Función |
+|---|---|
+| `index.php` | Tienda principal |
+| `registro.php` | Registro de clientes |
+| `login.php` | Inicio de sesión |
+| `perfil.php` | Perfil y dirección |
+| `checkout.php` | Datos de entrega y cotización |
+| `crear_pedido.php` | Validación y creación del pedido |
+| `pago.php` | Selección de método de pago |
+| `pagar_pedido.php` | Integración con Mercado Pago |
+| `mercadopago_webhook.php` | Notificaciones de Mercado Pago |
+| `pago_resultado.php` | Resultado y confirmación de pago |
+| `mis_pedidos.php` | Historial del cliente |
+| `pedido.php` | Detalle y seguimiento de pedido |
+| `panel_admin.php` | Productos y promociones |
+| `panel_pedidos.php` | Administración de pedidos |
+| `funciones.php` | Funciones compartidas |
+| `config.php` | Configuración general |
+| `conexion.php` | Conexión a MySQL |
+| `assets/css/` | Diseño integrado FarmaPlus |
+| `assets/js/` | Interacciones de la tienda |
 
-## Archivos visuales integrados
+---
 
-La nueva portada usa:
+# Pruebas recomendadas
 
-- `assets/css/variables.css`
-- `assets/css/animations.css`
-- `assets/css/storefront.css`
-- `assets/css/storefront-overrides.css`
-- `assets/js/cart.js`
-- `assets/js/render.js`
-- `assets/js/main.js`
+Antes de presentar o publicar el proyecto conviene comprobar:
 
-Los productos ya no están definidos en un `data.js` estático: `index.php` genera los datos desde MySQL.
+1. Crear una cuenta nueva.
+2. Iniciar y cerrar sesión.
+3. Guardar una dirección en Mi perfil.
+4. Crear un producto como administrador.
+5. Editar el producto.
+6. Crear una promoción.
+7. Comprobar el precio promocional en la tienda.
+8. Agregar productos al carrito.
+9. Cambiar cantidades.
+10. Continuar al checkout.
+11. Comprobar que aparezca la dirección guardada.
+12. Cotizar envío.
+13. Crear el pedido.
+14. Probar pago interno de demostración.
+15. Probar Mercado Pago en sandbox.
+16. Comprobar la pantalla de pago aprobado.
+17. Cambiar pedido a Preparando.
+18. Cambiar pedido a Enviado y colocar una guía.
+19. Probar WhatsApp manual.
+20. Probar correo SMTP si está configurado.
+21. Marcar el pedido como Entregado.
 
-## Seguridad
+---
 
-Se conservan:
+# Resultado final del proyecto
 
-- MySQLi con consultas preparadas;
-- `password_hash()` / `password_verify()`;
-- CSRF;
-- escape HTML;
-- sesión HttpOnly/SameSite;
-- validación del servidor para carrito, stock, precios y envío;
-- subida de imágenes JPG/PNG/WebP validada;
-- bloqueo de ejecución PHP en `uploads`.
+El proyecto pasó de ser un catálogo básico de farmacia a una aplicación web que integra:
 
-Además, los productos marcados `requiere_receta=1` no se pueden completar desde el carrito mientras no exista un flujo real de validación de receta.
+```text
+CATÁLOGO
++ INVENTARIO
++ USUARIOS
++ PERFILES
++ DIRECCIONES
++ CARRITO
++ CHECKOUT
++ ENVÍOS
++ PEDIDOS
++ PAGOS
++ PROMOCIONES
++ NOTIFICACIONES
++ SEGUIMIENTO
++ ADMINISTRACIÓN
++ DISEÑO RESPONSIVE
+```
 
-## Pruebas recomendadas
+La aplicación conserva una arquitectura sencilla basada en PHP/MySQL para que pueda seguir desarrollándose fácilmente en XAMPP, pero al mismo tiempo deja preparada la estructura para conectar en el futuro servicios reales de paquetería, notificaciones automáticas por WhatsApp y otras formas de pago.
 
-1. Registro y login.
-2. Guardar dirección en Perfil.
-3. Crear una promoción desde Admin.
-4. Comprobar precio tachado/nuevo en portada.
-5. Agregar productos y cambiar cantidades.
-6. Ir a Checkout y comprobar que el servidor conserva el precio promocional.
-7. Crear pedido.
-8. Pagar en sandbox.
-9. Cambiar pedido a Preparando/Enviado.
-10. Añadir guía y probar WhatsApp/correo.
+---
+
+# Mejoras futuras sugeridas
+
+- conectar una API real de paquetería para tarifas y guías automáticas;
+- validar recetas mediante un flujo administrativo;
+- dashboard con estadísticas de ventas;
+- reportes por día, mes y producto;
+- comprobantes o facturación;
+- recuperación de contraseña por correo;
+- verificación de correo electrónico;
+- WhatsApp Cloud API automático;
+- administración de múltiples direcciones por cliente;
+- panel de métricas de promociones;
+- pruebas automatizadas.
+
+---
+
+## Proyecto académico / demostrativo
+
+Esta aplicación se desarrolló como un proyecto web de farmacia y comercio electrónico. Las funciones relacionadas con medicamentos, recetas, pagos y envíos deben adaptarse a la normativa, infraestructura y proveedores reales antes de utilizarse en un entorno comercial de producción.
